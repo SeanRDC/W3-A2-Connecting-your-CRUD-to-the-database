@@ -39,14 +39,16 @@ def root():
 def health_check():
     return {"status": "ok"}
 
-# get all the tasks, or search for a specific task(s)
+# get all the tasks, search for a specific task(s), get filtered tasks by status
 @app.get("/tasks")
-def tasks(search: str = None):
+def tasks(search: str = None, done: bool = None):
     connection = open_db()
     cursor = connection.cursor()
     if search is not None:
         user_search = f"%{search}%"
         cursor.execute("SELECT * FROM tasks WHERE title LIKE ?", (user_search,))
+    elif done is not None:
+        cursor.execute("SELECT * FROM tasks WHERE done = ?", (int(done),))
     else:
         cursor.execute("SELECT * FROM tasks")
     results = cursor.fetchall()
