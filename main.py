@@ -18,8 +18,11 @@ tasks_db = [
     {"id": 3, "title": "Test with Swagger", "done": False}
 ]
 # tasks_db counterpart but it is the actual database
+def open_db():
+    return sqlite3.connect("tasks.db")
+
 def init_db():
-    connection = sqlite3.connect("tasks.db")
+    connection = open_db()
     cursor = connection.cursor()
     cursor.execute("CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, title TEXT, done BOOLEAN)")
     cursor.execute("SELECT COUNT(*) FROM tasks")
@@ -40,7 +43,7 @@ def root():
 def health_check():
     return {"status": "ok"}
 
-@app.get("/tasks")
+#@app.get("/tasks")
 def tasks(done: bool = None, search: str = None):
     results = tasks_db
     if done is not None:
@@ -55,14 +58,49 @@ def tasks(done: bool = None, search: str = None):
             if search.lower() in task_search["title"].lower():
                 searched_task.append(task_search)
         results = searched_task
-    return results
+    #return results
+    pass
 
-@app.get("/tasks/{task_id}")
+# app.get("/tasks") for the actual db
+@app.get("/tasks")
+def tasks():
+    connection = open_db()
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM tasks")
+    results = cursor.fetchall()
+    connection.close()
+    dict_results = []
+    keys = ['id', 'title', 'done']
+    for item in results:
+        sub_dict = dict(zip(keys, item))
+        sub_dict['done'] = bool(sub_dict['done'])
+        dict_results.append(sub_dict)
+    return dict_results
+
+#@app.get("/tasks/{task_id}")
 def get_task(task_id: int):
     for selected_task in tasks_db:
         if selected_task["id"] == task_id:
             return selected_task
-    return JSONResponse(status_code=404, content={"error": f"Task {task_id} not found"})
+    #return JSONResponse(status_code=404, content={"error": f"Task {task_id} not found"})
+    pass
+
+# app.get("/tasks/{task_id}") for the actual db
+@app.get("/tasks/{task_id}")
+def get_task(task_id: int):
+    connection = open_db()
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
+    result = cursor.fetchone()
+    connection.close()
+    
+    if result is None:
+            return JSONResponse(status_code=404, content={"error": f"Task {task_id} not found"})
+        
+    keys = ['id', 'title', 'done']
+    sub_dict = dict(zip(keys, result))
+    sub_dict['done'] = bool(sub_dict['done'])
+    return sub_dict
 
 @app.post("/tasks")
 def create_task(task_data: TaskCreate):
