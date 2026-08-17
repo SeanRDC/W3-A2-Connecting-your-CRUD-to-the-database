@@ -12,9 +12,11 @@ class TaskUpdate(BaseModel):
     title: str = None
     done: bool = None
 
+# Connect to the database via sqlite3
 def open_db():
     return sqlite3.connect("tasks.db")
 
+# Initialize and create the database with default tasks
 def init_db():
     connection = open_db()
     cursor = connection.cursor()
@@ -37,11 +39,16 @@ def root():
 def health_check():
     return {"status": "ok"}
 
+# get all the tasks, or search for a specific task(s)
 @app.get("/tasks")
-def tasks():
+def tasks(search: str = None):
     connection = open_db()
     cursor = connection.cursor()
-    cursor.execute("SELECT * FROM tasks")
+    if search is not None:
+        user_search = f"%{search}%"
+        cursor.execute("SELECT * FROM tasks WHERE title LIKE ?", (user_search,))
+    else:
+        cursor.execute("SELECT * FROM tasks")
     results = cursor.fetchall()
     connection.close()
     dict_results = []
