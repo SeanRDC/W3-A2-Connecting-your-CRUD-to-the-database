@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 import sqlite3
+from datetime import datetime
 
 app = FastAPI()
 
@@ -18,15 +19,16 @@ def open_db():
 
 # Initialize and create the database with default tasks
 def init_db():
+    current_time = datetime.now().isoformat()
     connection = open_db()
     cursor = connection.cursor()
-    cursor.execute("CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, title TEXT, done BOOLEAN)")
+    cursor.execute("CREATE TABLE IF NOT EXISTS tasks (id INTEGER PRIMARY KEY, title TEXT, done BOOLEAN, created_at TEXT, updated_at TEXT)")
     cursor.execute("SELECT COUNT(*) FROM tasks")
     checker = cursor.fetchone()
     if checker[0] == 0:
-        cursor.execute("INSERT INTO tasks (title, done) VALUES ('Learn HTTP', 1)")
-        cursor.execute("INSERT INTO tasks (title, done) VALUES ('Build API', 0)")
-        cursor.execute("INSERT INTO tasks (title, done) VALUES ('Test with Swagger', 0)")
+        cursor.execute("INSERT INTO tasks (title, done, created_at, updated_at) VALUES ('Learn HTTP', 1, ?, ?)", (current_time, current_time))
+        cursor.execute("INSERT INTO tasks (title, done, created_at, updated_at) VALUES ('Build API', 0, ?, ?)", (current_time, current_time))
+        cursor.execute("INSERT INTO tasks (title, done, created_at, updated_at) VALUES ('Test with Swagger', 0, ?, ?)", (current_time, current_time))
     connection.commit()
     connection.close()
 init_db()
@@ -83,20 +85,22 @@ def get_task(task_id: int):
 # create new tasks
 @app.post("/tasks")
 def create_task(task_data: TaskCreate):
+    current_time = datetime.now().isoformat()
     if task_data.title is None or task_data.title.strip() == "":
         return JSONResponse(status_code=400, content={"error": "Bad Request"})
     connection = open_db()
     cursor = connection.cursor()
-    cursor.execute("INSERT INTO tasks (title, done) VALUES (?, 0)", (task_data.title,))
+    cursor.execute("INSERT INTO tasks (title, done, created_at, updated_at) VALUES (?, ?, ?, ?)", (task_data.title, 0, current_time, current_time))
     connection.commit()
     current_id = cursor.lastrowid
-    new_task = {"id": current_id, "title": task_data.title, "done": False}
+    new_task = {"id": current_id, "title": task_data.title, "done": False, "created_at": current_time, "updated_at": current_time}
     connection.close()
     return JSONResponse(status_code=201, content=new_task)
 
 # update a selected tasks
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, task_data: TaskUpdate):
+    current_time = datetime.now().isoformat()
     connection = open_db()
     cursor = connection.cursor()
     cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
@@ -119,10 +123,10 @@ def update_task(task_id: int, task_data: TaskUpdate):
     else:
         new_status = bool(result[2])
     
-    cursor.execute("UPDATE tasks SET title = ?, done = ? WHERE id = ?", (new_title, new_status, task_id))
+    cursor.execute("UPDATE tasks SET title = ?, done = ?, updated_at = ? WHERE id = ?", (new_title, new_status, current_time ,task_id))
     connection.commit()
     connection.close()
-    selected_task = {'id':task_id, 'title': new_title, 'done': new_status}
+    selected_task = {'id':task_id, 'title': new_title, 'done': new_status, 'created_at': result[3], 'updated_at': current_time}
     return JSONResponse(status_code=200, content=selected_task)
 
 # delete a task 

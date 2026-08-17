@@ -23,10 +23,13 @@ To start the FastAPI server, clone the repository, ensure your environment is se
 
 ## Example SQL Query
 During testing, I interacted with the database directly using DB Browser. Here is an example query I ran:
-    ```sql
+    ```bash
         SELECT * FROM tasks;
     ```
 This query successfully returned all rows in the tasks table.
 
 ## DB Browser SQLite UI
 ![DB Browser SQLite Dashboard](DB-browser-SS.png)
+
+## Reflecting on Schema Changes
+Changing the table's shape after the database was already populated felt disruptive, as I had to completely delete my existing tasks.db file and lose my data just to add the new timestamp columns. Experiencing this friction firsthand made it immediately clear why professional database migrations exist to safely evolve a schema without destroying the underlying data.
