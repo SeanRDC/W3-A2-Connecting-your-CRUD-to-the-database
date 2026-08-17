@@ -102,7 +102,7 @@ def get_task(task_id: int):
     sub_dict['done'] = bool(sub_dict['done'])
     return sub_dict
 
-@app.post("/tasks")
+#@app.post("/tasks")
 def create_task(task_data: TaskCreate):
     if task_data.title is None or task_data.title.strip() == "":
         return JSONResponse(status_code=400, content={"error": "Bad Request"})
@@ -112,7 +112,22 @@ def create_task(task_data: TaskCreate):
         new_task_id = max(i["id"] for i in tasks_db) + 1
     create = {"id": new_task_id, "title": task_data.title, "done": False}
     tasks_db.append(create)
-    return JSONResponse(status_code=201, content=create)
+    #return JSONResponse(status_code=201, content=create)
+    pass
+
+# app.post("/tasks") for the actual db
+@app.post("/tasks")
+def create_task(task_data: TaskCreate):
+    if task_data.title is None or task_data.title.strip() == "":
+        return JSONResponse(status_code=400, content={"error": "Bad Request"})
+    connection = open_db()
+    cursor = connection.cursor()
+    cursor.execute("INSERT INTO tasks (title, done) VALUES (?, 0)", (task_data.title,))
+    connection.commit()
+    current_id = cursor.lastrowid
+    new_task = {"id": current_id, "title": task_data.title, "done": False}
+    connection.close()
+    return JSONResponse(status_code=201, content=new_task)
 
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, task_data: TaskUpdate):
