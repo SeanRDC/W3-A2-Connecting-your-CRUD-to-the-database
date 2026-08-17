@@ -23,8 +23,9 @@ To start the FastAPI server, clone the repository, ensure your environment is se
 
 ## Example SQL Query
 During testing, I interacted with the database directly using DB Browser. Here is an example query I ran:
-    ```bash
+    ```sql
         SELECT * FROM tasks;
+    ```
 This query successfully returned all rows in the tasks table.
 
 ## DB Browser SQLite UI
