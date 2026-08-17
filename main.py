@@ -63,6 +63,7 @@ def tasks(search: str = None, done: bool = None, sort: bool = None):
         dict_results.append(sub_dict)
     return dict_results
 
+# get tasks by id
 @app.get("/tasks/{task_id}")
 def get_task(task_id: int):
     connection = open_db()
@@ -79,6 +80,7 @@ def get_task(task_id: int):
     sub_dict['done'] = bool(sub_dict['done'])
     return sub_dict
 
+# create new tasks
 @app.post("/tasks")
 def create_task(task_data: TaskCreate):
     if task_data.title is None or task_data.title.strip() == "":
@@ -92,6 +94,7 @@ def create_task(task_data: TaskCreate):
     connection.close()
     return JSONResponse(status_code=201, content=new_task)
 
+# update a selected tasks
 @app.put("/tasks/{task_id}")
 def update_task(task_id: int, task_data: TaskUpdate):
     connection = open_db()
@@ -122,6 +125,7 @@ def update_task(task_id: int, task_data: TaskUpdate):
     selected_task = {'id':task_id, 'title': new_title, 'done': new_status}
     return JSONResponse(status_code=200, content=selected_task)
 
+# delete a task 
 @app.delete("/tasks/{task_id}")
 def delete_task(task_id: int):
     connection = open_db()
@@ -136,3 +140,13 @@ def delete_task(task_id: int):
     else:
         connection.close()
         return JSONResponse(status_code=404, content={"error": f"Task {task_id} not found"})
+
+# get the status or total counts of the tasks
+@app.get("/stats")
+def get_status():
+    connection = open_db()
+    cursor = connection.cursor()
+    cursor.execute("SELECT COUNT(*) FROM tasks")
+    result = cursor.fetchone()
+    connection.close()
+    return {"total_tasks": result[0]}
